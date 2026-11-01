@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>หารตังกันบ่ — เคลียร์บิลกับเพื่อน ทริปจบเงินจบ ไม่งงรอบโอน</title>
+
+  <!-- Google Fonts: Prompt for modern Thai typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Theme pre-loader to prevent theme flash (FOUT) -->
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('smartsplit-theme');
+        if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- ==================================================================== -->
+    <!-- MAIN VIEW (หน้าหลัก: จัดการบิลและสรุปยอดโอน) -->
+    <!-- ==================================================================== -->
+    <div id="mainView">
+      <!-- Top Application Header -->
+      <header class="app-header">
+        <div class="header-top-row">
+          <div class="brand-wrapper">
+            <div class="brand-logo-badge">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/><circle cx="12" cy="12" r="2"/>
+              </svg>
+            </div>
+            <div>
+              <div class="brand-title">
+                <span>หารตังกันบ่</span>
+                <span class="brand-pill">IE211's Project</span>
+              </div>
+              <div class="brand-subtitle">
+                ทริปจบเงินต้องเคลียร์! ช่วยคิดให้ว่าใครต้องโอนให้ใคร รอบเดียวจบ ไม่ต้องโอนวนให้ปวดหัว
+              </div>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button class="theme-toggle" id="btnToggleTheme" title="สลับธีม สว่าง / มืด">
+              <span class="theme-toggle-icon"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="preset-bar">
+          <button class="btn-preset secret" id="btnHeaderSecret">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+            <span>ถ้าไม่ใช้เว็บนี้ ต้องโอนกันมือกี่รอบเนี่ย?</span>
+          </button>
+          <button class="btn-preset danger" id="btnClearAll">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+            <span>ล้างตี้ เริ่มใหม่หมด</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="steps-wrapper">
+        
+        <!-- STEP 1: จัดการสมาชิกในกลุ่ม -->
+        <section class="step-card">
+          <div class="step-header">
+            <div class="step-badge-group">
+              <div class="step-number">01</div>
+              <div>
+                <div class="step-title">แก๊งเรามีใครบ้าง?</div>
+                <div class="step-desc">ใส่ชื่อเพื่อนร่วมชะตากรรมทริปนี้มาเลย ใครไปด้วยพิมพ์มา!</div>
+              </div>
+            </div>
+            <span class="step-desc" id="friendCountTag" style="font-weight: 600; color: var(--primary);">0 คนในตี้</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputFriendName">ชื่อเพื่อนร่วมตี้</label>
+            <div class="input-row">
+              <input type="text" id="inputFriendName" placeholder="พิมพ์ชื่อเพื่อน เช่น แอน, โบ้, นัท, กานต์..." maxlength="25" autocomplete="off">
+              <button class="btn btn-primary" id="btnAddFriend">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"/><path d="M12 5v14"/>
+                </svg>
+                <span>ดึงเข้าตี้</span>
+              </button>
+            </div>
+          </div>
+
+          <label class="form-label" style="margin-top: 10px; margin-bottom: 6px;">สมาชิกในตี้ตอนนี้ (กด ✕ ถ้าเพื่อนเท):</label>
+          <div class="friends-list" id="friendsChipContainer">
+            <!-- Dynamically populated friend chips -->
+          </div>
+        </section>
+
+        <!-- STEP 2: บันทึกค่าใช้จ่าย -->
+        <section class="step-card">
+          <div class="step-header">
+            <div class="step-badge-group">
+              <div class="step-number">02</div>
+              <div>
+                <div class="step-title">ใครเปย์อะไรไปบ้าง?</div>
+                <div class="step-desc">แปะบิลรัวๆ ใครจ่ายอะไรไป จดไว้ก่อน เดี๋ยวระบบหารให้เอง</div>
+              </div>
+            </div>
+            <span class="step-desc" id="expenseCountTag" style="font-weight: 600;">0 บิลแล้ว</span>
+          </div>
+
+          <!-- กล่องอัปโหลดสลิป/บิล พร้อม OCR สแกนตัวเลข -->
+          <div class="bill-upload-wrapper">
+            <input type="file" id="inputExpenseBill" accept="image/*" capture="environment" style="display: none;">
+            <div class="bill-dropzone" id="billDropzone">
+              <div class="dropzone-empty" id="dropzoneEmpty">
+                <div class="dropzone-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>
+                  </svg>
+                </div>
+                <div class="dropzone-text">
+                  <span class="dropzone-title">📸 ถ่ายรูปบิล / แนบสลิป (ขี้เกียจพิมพ์ เดี๋ยวอ่านยอดให้!)</span>
+                  <span class="dropzone-sub">คลิกหรือลากรูปสลิปมาวาง ระบบจะช่วยสแกนตัวเลขยอดเงินให้อัตโนมัติ</span>
+                </div>
+              </div>
+              <div class="dropzone-preview" id="dropzonePreview" style="display: none;">
+                <div class="dropzone-thumb-box">
+                  <img id="billPreviewImg" src="" alt="รูปบิลที่แนบ">
+                </div>
+                <div class="preview-info">
+                  <div class="ocr-status" id="ocrStatus">
+                    <!-- Dynamic OCR status indicator -->
+                  </div>
+                  <button type="button" class="btn-remove-bill" id="btnRemoveBill">
+                    ✕ เอารูปนี้ออก
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="inputExpenseDesc">จ่ายค่าอะไรไป?</label>
+              <input type="text" id="inputExpenseDesc" placeholder="เช่น ค่าที่พัก, ชาบูกลางคืน, ค่าน้ำมัน, เซเว่น..." maxlength="50">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="inputExpenseAmount">โดนไปกี่บาท?</label>
+              <input type="number" id="inputExpenseAmount" placeholder="0.00" step="0.5" min="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="selectPayer">ใครเป็นคนเปย์ก่อน? (Payer)</label>
+            <select id="selectPayer">
+              <!-- Dynamically populated options -->
+            </select>
+          </div>
+
+          <!-- กล่องเลือกสมาชิกที่ร่วมหาร -->
+          <div class="form-group">
+            <div class="consumer-selector-box">
+              <div class="consumer-header-actions">
+                <span class="form-label" style="margin-bottom: 0;">บิลนี้ใครร่วมตี้บ้าง? (กินด้วยกัน หารด้วยกัน)</span>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnSelectAllConsumers">เหมาหมดทุกคน</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnClearAllConsumers">เคลียร์ใหม่</button>
+                </div>
+              </div>
+
+              <!-- Checkbox List of friends -->
+              <div class="consumer-grid" id="consumerCheckboxGrid">
+                <!-- Dynamically populated checkboxes -->
+              </div>
+
+              <!-- แสดงสรุปยอดเฉลี่ยต่อคน -->
+              <div class="share-hint-banner" id="shareHintBanner">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary); flex-shrink: 0;">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                </svg>
+                <span id="shareHintText" style="font-weight: 500;">ตกคนละ 0.00 บาท สบายกระเป๋า (หาร 0 คน)</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btnSaveExpense" style="width: 100%; padding: 12px; font-size: 15px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14"/><path d="M12 5v14"/>
+            </svg>
+            <span>+ แปะบิลนี้ลงตี้</span>
+          </button>
+
+          <!-- รายการค่าใช้จ่ายที่บันทึกแล้ว -->
+          <div class="expenses-list-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div class="sub-section-title" style="margin-bottom: 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-8"/><path d="M16 12h-8"/><path d="M12 16h-4"/>
+                </svg>
+                <span>กองบิลที่รูดไปแล้ว</span>
+              </div>
+              <span id="totalLoggedExpenseText" style="font-weight: 600; color: var(--primary);">รวมยอดโดนไป 0.00 บาท</span>
+            </div>
+
+            <div class="expense-cards-grid" id="expensesListContainer">
+              <!-- Dynamically rendered list of expenses -->
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 3: สรุปวิธีเคลียร์เงิน -->
+        <section class="step-card">
+          <div class="step-header">
+            <div class="step-badge-group">
+              <div class="step-number">03</div>
+              <div>
+                <div class="step-title">สรุปยอดเคลียร์ใจ (ใครโอนให้ใคร)</div>
+                <div class="step-desc">ระบบช่วยตัดหนี้วนรอบให้เรียบร้อย โอนตามนี้รอบเดียวจบ แยกย้ายกลับบ้านได้!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- แถบทางเข้าหน้าวิเคราะห์ -->
+          <div class="secret-teaser-banner" id="btnOpenSecretView">
+            <div class="secret-teaser-left">
+              <div class="secret-teaser-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                </svg>
+              </div>
+              <div>
+                <div class="secret-teaser-title">อยากรู้มั้ย? ถ้าไม่มีเว็บนี้จะต้องโอนกันกี่รอบ</div>
+                <div class="secret-teaser-desc">กดแอบส่องความวุ่นวาย เทียบให้เห็นจะจะว่าถ้าต่างคนต่างโอนจะปวดหัวขนาดไหน!</div>
+              </div>
+            </div>
+            <button type="button" class="btn-secret-action">
+              แอบส่องความวุ่นวาย &rarr;
+            </button>
+          </div>
+
+          <!-- การ์ดสถิติภาพรวม -->
+          <div class="summary-stats-grid">
+            <div class="stat-card">
+              <span class="stat-card-label">ยอดเงินรวมทั้งทริปนี้</span>
+              <span class="stat-card-value" id="statTotalTripAmount">0.00 ฿</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-label">จำนวนบิลที่รูดไป</span>
+              <span class="stat-card-value" id="statTotalExpensesCount">0 บิล</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-label">โอนแค่กี่รอบจบ?</span>
+              <span class="stat-card-value" style="color: var(--primary);" id="statTotalTransfersCount">0 ครั้งจบ!</span>
+            </div>
+          </div>
+
+          <!-- ส่วนที่ 1: สถานะรายบุคคล -->
+          <div class="sub-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>เช็คบิลรายคน (ใครรอด / ใครต้องควัก)</span>
+          </div>
+          <div class="person-balance-grid" id="personBalanceContainer">
+            <!-- Dynamically generated balance cards -->
+          </div>
+
+          <!-- ส่วนที่ 2: ขั้นตอนการโอนเงินสุทธิ -->
+          <div class="sub-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+              <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
+            </svg>
+            <span>แผนผังการโอน (โอนตามนี้น้อยครั้งที่สุด)</span>
+          </div>
+          <div class="transfers-container" id="transfersContainer">
+            <!-- Dynamically generated transfer cards -->
+          </div>
+
+          <!-- ส่วนที่ 3: ปุ่มคัดลอกสรุปส่ง LINE -->
+          <div class="line-action-box">
+            <div class="line-action-text">
+              <div class="line-action-title">ก๊อปปี้สรุปส่งไลน์กลุ่ม (ทวงแบบน่ารัก)</div>
+              <div class="line-action-sub">กดปุ่มเดียวได้ข้อความพร้อมยอดเสร็จสรรพ แปะเข้ากรุ๊ปไลน์เพื่อนรู้เรื่องทันที</div>
+            </div>
+            <button class="btn btn-line" id="btnCopyLine">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+              </svg>
+              <span>ก๊อปปี้ส่งไลน์กลุ่ม</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- COMPARISON VIEW: หน้าแอบส่องความวุ่นวาย (ถ้าไม่มีเว็บนี้ต้องโอนกี่รอบ) -->
+    <!-- ==================================================================== -->
+    <div id="secretComparisonView">
+      
+      <!-- Comparison View Header -->
+      <header class="secret-header">
+        <div class="secret-header-top">
+          <span class="secret-badge-meta">
+            SIMPLIFICATION ANALYSIS
+          </span>
+          <button class="btn-back-main" id="btnBackToMainTop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+            </svg>
+            <span>← กลับหน้าเคลียร์บิล</span>
+          </button>
+        </div>
+        <div class="secret-title">
+          ถ้าไม่มีเว็บนี้... ต้องโอนวนกี่รอบเนี่ย?
+        </div>
+        <div class="secret-subtitle">
+          จำลองความปวดหัวถ้าต่างคนต่างโอนตามบิล สลิปจะระเบิดแชตขนาดไหน มาดูกัน!
+        </div>
+      </header>
+
+      <!-- Savings Callout Hero -->
+      <div class="savings-banner">
+        <div>
+          <div class="savings-title" id="secretSavingsTitle">ประหยัดแรงโอนไปได้ 0 รอบ (-0%)!</div>
+          <div class="savings-desc" id="secretSavingsDesc">จากเดิมที่ต้องโอนวนไปวนมา ระบบตัดหนี้ให้เหลือแค่ไม่กี่รอบ สบายขึ้นเยอะ!</div>
+        </div>
+        <div class="savings-pill" id="secretSavingsPill">เซฟแรงโอน 0%</div>
+      </div>
+
+      <!-- Comparison Cards Hero (Side by Side) -->
+      <div class="compare-hero-grid">
+        <!-- ฝั่งซ้าย: โอนตามมีตามเกิด (แยกตามบิล) -->
+        <div class="compare-card-unoptimized">
+          <span class="compare-badge-tag bad">โอนตามมีตามเกิด (แยกตามบิล)</span>
+          <div class="compare-big-number bad" id="secretRawCount">0 รอบ</div>
+          <p style="font-size: 13.5px; color: var(--danger-dark); font-weight: 500;">
+            ทุกคนต้องเปิดแอปธนาคารกดโอนยิบย่อยแยกตามบิล สลิปเต็มแชตกลุ่มแน่นอน!
+          </p>
+          <div class="compare-meta-list">
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+              </svg>
+              <span>สลิปที่ต้องโอนและตรวจ: <strong id="secretRawSlipCount">0 ใบ</strong></span>
+            </div>
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M8 10h8"/>
+              </svg>
+              <span>ยอดเงินวิ่งวนไปวนมา: <strong id="secretRawVolume">0.00 บาท</strong></span>
+            </div>
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--warning);">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+              </svg>
+              <span id="secretPingPongCount">มีคู่ที่โอนเงินสวนทางกันด้วยนะ!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ฝั่งขวา: ใช้เว็บนี้ (ตัดหนี้วนรอบให้) -->
+        <div class="compare-card-optimized">
+          <span class="compare-badge-tag good">ใช้เว็บนี้ (ตัดหนี้วนรอบให้)</span>
+          <div class="compare-big-number good" id="secretOptCount">0 รอบ</div>
+          <p style="font-size: 13.5px; color: var(--success-dark); font-weight: 500;">
+            หักลบกลบหนี้ให้เสร็จสรรพ โอนคนละครั้งสองครั้งก็เคลียร์หมด สบายใจสุดๆ!
+          </p>
+          <div class="compare-meta-list">
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+              </svg>
+              <span>สลิปจริงที่ต้องส่ง: <strong id="secretOptSlipCount">0 ใบ</strong></span>
+            </div>
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M8 10h8"/>
+              </svg>
+              <span>ยอดโอนสุทธิแบบไม่งง: <strong id="secretOptVolume">0.00 บาท</strong></span>
+            </div>
+            <div class="compare-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success);">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span>กำจัดการโอนเงินวนรอบ 100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mutual Debt List (คู่ที่มียอดสวนทางกัน) -->
+      <section class="pingpong-section">
+        <div class="sub-section-title" style="margin-bottom: 4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+            <path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>
+          </svg>
+          <span>คู่นี้โอนเงินสวนทางกันเฉย! (Mutual Debts)</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          ต่างคนต่างเคยออกเงินให้กันคนละบิล ระบบเลยหักลบส่วนต่างให้ เหลือโอนจริงทางเดียว ไม่ต้องเสียเวลาโอนสวนกันไปมา
+        </p>
+        <div class="pingpong-list" id="secretPingPongList">
+          <!-- Dynamically populated pingpong cards -->
+        </div>
+      </section>
+
+      <!-- ตารางจำลองบิลต่อบิล -->
+      <section class="raw-bills-section">
+        <div class="sub-section-title" style="margin-bottom: 4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>ถ้าต้องโอนแยกตามบิล... รายการจะยาวเป็นหางว่าวแบบนี้</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          เปิดดูความวุ่นวายถ้าทุกคนต้องจ่ายคืนคนเปย์ในทุกๆ บิลเดี่ยวๆ
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="raw-transfers-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>บิลนี้</th>
+                <th>คนโอน</th>
+                <th style="text-align: center; width: 40px;"></th>
+                <th>คนรับ</th>
+                <th style="text-align: right;">ยอดเงิน</th>
+              </tr>
+            </thead>
+            <tbody id="secretRawTransfersTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ตารางสรุปเปรียบเทียบ -->
+      <section class="raw-bills-section">
+        <div class="sub-section-title" style="margin-bottom: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          <span>เทียบกันจะๆ ชัดเจน</span>
+        </div>
+        <table class="feature-comparison-table">
+          <thead>
+            <tr>
+              <th>เรื่องที่เทียบ</th>
+              <th style="color: var(--danger);">โอนแยกตามบิล (เหนื่อยแน่)</th>
+              <th style="color: var(--success);">ใช้เว็บนี้ (ชิลเลย)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>จำนวนครั้งที่ต้องเปิดแอปโอน</strong></td>
+              <td id="tableCompRawRounds" style="color: var(--danger); font-weight: 500;">0 ครั้ง</td>
+              <td id="tableCompOptRounds" style="color: var(--success); font-weight: 600;">0 ครั้ง</td>
+            </tr>
+            <tr>
+              <td><strong>จำนวนสลิปในแชตกลุ่ม</strong></td>
+              <td id="tableCompRawSlips" style="color: var(--danger); font-weight: 500;">0 สลิป</td>
+              <td id="tableCompOptSlips" style="color: var(--success); font-weight: 600;">0 สลิป</td>
+            </tr>
+            <tr>
+              <td><strong>ความปวดหัว</strong></td>
+              <td style="color: var(--danger);">สลิปเต็มแชต ใครโอนแล้วมั่งไม่รู้</td>
+              <td style="color: var(--success); font-weight: 600;">โอนน้อยรอบ เช็คง่าย สบายใจ</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- ปุ่มคัดลอกสรุปบทวิเคราะห์ -->
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+          <button class="btn btn-secondary" id="btnCopySecretLine">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+            </svg>
+            <span>ก๊อปปี้ข้อมูลเปรียบเทียบนี้</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ปุ่มกลับหน้าหลักด้านล่าง -->
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-primary" id="btnBackToMainBottom" style="padding: 10px 24px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+          </svg>
+          <span>← กลับไปหน้าหลัก สรุปยอดกันต่อ</span>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Popup -->
+  <div class="toast-popup" id="toastPopup">
+    <span id="toastIcon"></span>
+    <span id="toastMessage">เรียบร้อยจ้า!</span>
+  </div>
+
+  <!-- Modal Lightbox สำหรับเปิดดูรูปบิลเต็มจอ -->
+  <div class="image-modal-backdrop" id="imageModal">
+    <div class="image-modal-content">
+      <div class="image-modal-header">
+        <div class="image-modal-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+          </svg>
+          <span id="imageModalTitle">หลักฐานรูปบิล / สลิปโอนเงิน</span>
+        </div>
+        <button class="btn-close-modal" id="btnCloseModal" title="ปิดหน้าต่าง">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="image-modal-body">
+        <img id="imageModalImg" src="" alt="สลิป/บิลเต็มจอ">
+      </div>
+    </div>
+  </div>
+
+  <!-- External OCR Engine (Tesseract.js for reading receipt total) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+
+  <!-- Application Scripts -->
+  <script src="js/icons.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/solver.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
